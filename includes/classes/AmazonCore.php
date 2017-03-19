@@ -470,6 +470,11 @@ abstract class AmazonCore{
         return $this->config;
     }
 
+    public function mergeConfigKey($key,$value){
+        $this->setConfigKey($key,$value);
+        $this->_initConfig();
+        return $this;
+    }
     public function setConfigKey($key,$value)
     {
         $array = &$this->config;
