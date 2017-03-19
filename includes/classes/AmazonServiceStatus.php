@@ -47,7 +47,7 @@ class AmazonServiceStatus extends AmazonCore{
      */
     public function __construct($s = null, $service = null, $mock = false, $m = null, $config = null){
         parent::__construct($s, $mock, $m, $config);
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         
         if ($service){
             $this->setService($service);
@@ -82,11 +82,7 @@ class AmazonServiceStatus extends AmazonCore{
      * @return boolean <b>TRUE</b> if valid input, <b>FALSE</b> if improper input
      */
     public function setService($s){
-        if (file_exists($this->env)){
-            include($this->env);
-        } else {
-            return false;
-        }
+        extract($this->env,EXTR_OVERWRITE);
         
         if (is_null($s)){
             $this->log("Service cannot be null",'Warning');

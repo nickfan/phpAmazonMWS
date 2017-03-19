@@ -61,20 +61,20 @@ class AmazonCoreTest extends PHPUnit_Framework_TestCase {
     /**
      * @covers AmazonCore::setConfig
      * @expectedException Exception
-     * @expectedExceptionMessage Config file does not exist or cannot be read! (no)
+     * @expectedExceptionMessage Config file does not exist or cannot be read!
      */
     public function testSetConfig() {
         $this->object->setConfig('no');
     }
 
-    /**
-     * @covers AmazonCore::setLogPath
-     * @expectedException Exception
-     * @expectedExceptionMessage Log file does not exist or cannot be read! (no)
-     */
-    public function testSetLogPath() {
-        $this->object->setLogPath('no');
-    }
+//    /**
+//     * @covers AmazonCore::setLogPath
+//     * @expectedException Exception
+//     * @expectedExceptionMessage Log file does not exist or cannot be read!
+//     */
+//    public function testSetLogPath() {
+//        $this->object->setLogPath('no');
+//    }
 
     /**
      * @covers AmazonCore::setStore

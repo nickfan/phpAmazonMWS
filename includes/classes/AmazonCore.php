@@ -99,12 +99,12 @@ abstract class AmazonCore{
     protected $throttleStop = false;
     protected $storeName;
     protected $options;
-    protected $config;
+    protected $config = [];
     protected $mockMode = false;
     protected $mockFiles;
     protected $mockIndex = 0;
     protected $logpath;
-    protected $env;
+    protected $env = [];
     protected $rawResponses = array();
     
     /**
@@ -126,14 +126,11 @@ abstract class AmazonCore{
      * @param string $config [optional] <p>An alternate config file to set. Used for testing.</p>
      */
     protected function __construct($s = null, $mock = false, $m = null, $config = null){
-        if (is_null($config)){
-            $config = __DIR__.'/../../amazon-config.php';
-        }
+
         $this->setConfig($config);
         $this->setStore($s);
         $this->setMock($mock,$m);
         
-        $this->env=__DIR__.'/../../environment.php';
         $this->options['SignatureVersion'] = 2;
         $this->options['SignatureMethod'] = 'HmacSHA256';
     }
@@ -346,7 +343,7 @@ abstract class AmazonCore{
             return false;
         }
     }
-    
+
     /**
      * Set the config file.
      * 
@@ -356,19 +353,177 @@ abstract class AmazonCore{
      * @param string $path <p>The path to the config file.</p>
      * @throws Exception If the file cannot be found or read.
      */
-    public function setConfig($path){
-        if (file_exists($path) && is_readable($path)){
-            include($path);
-            $this->config = $path;
-            $this->setLogPath($logpath);
-            if (isset($AMAZON_SERVICE_URL)) {
-                $this->urlbase = rtrim($AMAZON_SERVICE_URL, '/') . '/';
-            }
-        } else {
-            throw new Exception("Config file does not exist or cannot be read! ($path)");
+    public function setConfig($settings=null){
+        if(is_null($settings)){
+            $settings = $this->getDefaultConfig();
+        }elseif (is_string($settings) && file_exists($settings) && is_readable($settings)){
+            include($settings);
+            $settings = compact('store','AMAZON_SERVICE_URL','logpath','logfunction','muteLog');
+        }elseif(is_array($settings)){
+            // is array
+        }else {
+            throw new Exception("Config file does not exist or cannot be read!");
         }
+        $this->config = array_merge($this->config,$settings);
+        $this->_initConfig();
     }
-    
+
+    public function setEnv($environment=null){
+        if(is_null($environment)){
+            $environment = $this->getDefaultEnv();
+        }elseif (is_string($environment) && file_exists($environment) && is_readable($environment)){
+            include($environment);
+            $environment = compact(
+                'AMAZON_APPLICATION',
+                'AMAZON_APPVERSION',
+                //Version numbers for cores
+                'AMAZON_VERSION_FEEDS'      ,
+                'AMAZON_VERSION_FINANCE'    ,
+                'AMAZON_VERSION_INBOUND'    ,
+                'AMAZON_VERSION_INVENTORY'  ,
+                'AMAZON_VERSION_MERCHANT'   ,
+                'AMAZON_VERSION_ORDERS'     ,
+                'AMAZON_VERSION_OUTBOUND'   ,
+                'AMAZON_VERSION_PRODUCTS'   ,
+                'AMAZON_VERSION_RECOMMEND'  ,
+                'AMAZON_VERSION_REPORTS'    ,
+                'AMAZON_VERSION_SELLERS'    ,
+                'AMAZON_VERSION_SUBSCRIBE'  ,
+
+                //Amazon Throttle Values in seconds
+                //Fetching Orders
+                'THROTTLE_LIMIT_ORDER',
+                'THROTTLE_TIME_ORDER',
+                //Fetching Order Lists
+                'THROTTLE_LIMIT_ORDERLIST',
+                'THROTTLE_TIME_ORDERLIST',
+                //Fetching Items
+                'THROTTLE_LIMIT_ITEM',
+                'THROTTLE_TIME_ITEM',
+                //Fetching Service Status
+                'THROTTLE_LIMIT_STATUS',
+                'THROTTLE_TIME_STATUS',
+                //Fetching Sellers Participation
+                'THROTTLE_LIMIT_SELLERS',
+                'THROTTLE_TIME_SELLERS',
+                //Anything in Inbound/Inventory/Outbound
+                'THROTTLE_LIMIT_INVENTORY',
+                'THROTTLE_TIME_INVENTORY',
+                //Products
+                'THROTTLE_LIMIT_PRODUCT',
+                'THROTTLE_TIME_PRODUCTLIST',
+                'THROTTLE_TIME_PRODUCTMATCH',
+                'THROTTLE_TIME_PRODUCTID',
+                'THROTTLE_TIME_PRODUCTPRICE',
+                //Requesting a Report
+                'THROTTLE_LIMIT_REPORTREQUEST',
+                'THROTTLE_TIME_REPORTREQUEST',
+                //Fetching a Report Request List
+                'THROTTLE_LIMIT_REPORTREQUESTLIST',
+                'THROTTLE_TIME_REPORTREQUESTLIST',
+                //Using a token with a report request
+                'THROTTLE_LIMIT_REPORTTOKEN',
+                'THROTTLE_TIME_REPORTTOKEN',
+                //Fetching a Report List
+                'THROTTLE_LIMIT_REPORTLIST',
+                'THROTTLE_TIME_REPORTLIST',
+                //Fetching a Report
+                'THROTTLE_LIMIT_REPORT',
+                'THROTTLE_TIME_REPORT',
+                //Fetching a Report Request List
+                'THROTTLE_LIMIT_REPORTSCHEDULE',
+                'THROTTLE_TIME_REPORTSCHEDULE',
+                //Submitting a Feed
+                'THROTTLE_LIMIT_FEEDSUBMIT',
+                'THROTTLE_TIME_FEEDSUBMIT',
+                //Fetching a Feed List
+                'THROTTLE_LIMIT_FEEDLIST',
+                'THROTTLE_TIME_FEEDLIST',
+                //Getting a Feed
+                'THROTTLE_LIMIT_FEEDRESULT',
+                'THROTTLE_TIME_FEEDRESULT',
+                //Merchant Fulfillments
+                'THROTTLE_LIMIT_MERCHANT',
+                'THROTTLE_TIME_MERCHANT',
+                //Subscriptions
+                'THROTTLE_LIMIT_SUBSCRIBE',
+                'THROTTLE_TIME_SUBSCRIBE',
+                //Recommendations
+                'THROTTLE_LIMIT_RECOMMEND',
+                'THROTTLE_TIME_RECOMMEND',
+                //Recommendations
+                'THROTTLE_LIMIT_FINANCE',
+                'THROTTLE_TIME_FINANCE');
+        }elseif(is_array($environment)){
+            // is array
+        }else {
+            throw new Exception("Environment file does not exist or cannot be read!".var_export($environment,true));
+        }
+        $this->env = array_merge($this->env,$environment);
+    }
+
+    public function getSetConfig($settings=null)
+    {
+        if(empty($this->config)){
+            $this->setConfig($settings);
+        }
+        return $this->config;
+    }
+
+    public function setConfigKey($key,$value)
+    {
+        $array = &$this->config;
+        if (is_null($key)) {
+            return $array = $value;
+        }
+
+        $keys = explode('.', $key);
+
+        while (count($keys) > 1) {
+            $key = array_shift($keys);
+
+            // If the key doesn't exist at this depth, we will just create an empty array
+            // to hold the next value, allowing us to create the arrays to hold final
+            // values at the correct depth. Then we'll keep digging into the array.
+            if (! isset($array[$key]) || ! is_array($array[$key])) {
+                $array[$key] = [];
+            }
+
+            $array = &$array[$key];
+        }
+
+        $array[array_shift($keys)] = $value;
+
+        return $array;
+    }
+
+    public function getConfigKey($key, $default = null)
+    {
+        $array = &$this->config;
+
+        if (is_null($key)) {
+            return $array;
+        }
+
+        if (isset($array[$key])) {
+            return $array[$key];
+        }
+
+        foreach (explode('.', $key) as $segment) {
+            if (! is_array($array) || ! array_key_exists($segment, $array)) {
+                return self::value($default);
+            }
+
+            $array = $array[$segment];
+        }
+
+        return $array;
+    }
+    protected static function value($value)
+    {
+        return $value instanceof Closure ? $value() : $value;
+    }
+
     /**
      * Set the log file path.
      * 
@@ -378,12 +533,12 @@ abstract class AmazonCore{
      * @throws Exception If the file cannot be found or read.
      */
     public function setLogPath($path){
-        if (file_exists($path) && is_readable($path)){
-            $this->logpath = $path;
-        } else {
-            throw new Exception("Log file does not exist or cannot be read! ($path)");
-        }
-        
+//        if (file_exists($path) && is_readable($path)){
+//            $this->logpath = $path;
+//        } else {
+//            throw new Exception("Log file does not exist or cannot be read! ($path)");
+//        }
+        $this->logpath = $path;
     }
     
     /**
@@ -399,12 +554,7 @@ abstract class AmazonCore{
      * @throws Exception If the file can't be found.
      */
     public function setStore($s=null){
-        if (file_exists($this->config)){
-            include($this->config);
-        } else {
-            throw new Exception("Config file does not exist!");
-        }
-        
+        extract($this->config,EXTR_OVERWRITE);
         if (empty($store) || !is_array($store)) {
             throw new Exception("No stores defined!");
         }
@@ -467,12 +617,8 @@ abstract class AmazonCore{
     protected function log($msg, $level = 'Info'){
         if ($msg != false) {
             $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-            
-            if (file_exists($this->config)){
-                include($this->config);
-            } else {
-                throw new Exception("Config file does not exist!");
-            }
+
+            extract($this->config,EXTR_OVERWRITE);
             if (isset($logfunction) && $logfunction != '' && function_exists($logfunction)){
                 switch ($level){
                    case('Info'): $loglevel = LOG_INFO; break; 
@@ -577,11 +723,7 @@ abstract class AmazonCore{
      * @throws Exception if config file or secret key is missing
      */
     protected function genQuery(){
-        if (file_exists($this->config)){
-            include($this->config);
-        } else {
-            throw new Exception("Config file does not exist!");
-        }
+        extract($this->config,EXTR_OVERWRITE);
         
         if (array_key_exists($this->storeName, $store) && array_key_exists('secretKey', $store[$this->storeName])){
             $secretKey = $store[$this->storeName]['secretKey'];
@@ -916,9 +1058,241 @@ abstract class AmazonCore{
             hash_hmac($hash, $data, $key, true)
         );
     }
-    
+
+    protected function getDefaultEnv()
+    {
+        return [
+            //for User-Agent header(?)
+            'AMAZON_APPLICATION' => 'phpAmazonMWS',
+            'AMAZON_APPVERSION' => '1.0',
+
+            //Version numbers for cores
+            'AMAZON_VERSION_FEEDS'       => '2009-01-01',
+            'AMAZON_VERSION_FINANCE'     => '2015-05-01',
+            'AMAZON_VERSION_INBOUND'     => '2010-10-01',
+            'AMAZON_VERSION_INVENTORY'   => '2010-10-01',
+            'AMAZON_VERSION_MERCHANT'    => '2015-06-01',
+            'AMAZON_VERSION_ORDERS'      => '2013-09-01',
+            'AMAZON_VERSION_OUTBOUND'    => '2010-10-01',
+            'AMAZON_VERSION_PRODUCTS'    => '2011-10-01',
+            'AMAZON_VERSION_RECOMMEND'   => '2013-04-01',
+            'AMAZON_VERSION_REPORTS'     => '2009-01-01',
+            'AMAZON_VERSION_SELLERS'     => '2011-07-01',
+            'AMAZON_VERSION_SUBSCRIBE'   => '2013-07-01',
+
+            //Amazon Throttle Values in seconds
+            //Fetching Orders
+            'THROTTLE_LIMIT_ORDER' => 6,
+            'THROTTLE_TIME_ORDER' => 60,
+            //Fetching Order Lists
+            'THROTTLE_LIMIT_ORDERLIST' => 6,
+            'THROTTLE_TIME_ORDERLIST' => 60,
+            //Fetching Items
+            'THROTTLE_LIMIT_ITEM' => 30,
+            'THROTTLE_TIME_ITEM' => 2,
+            //Fetching Service Status
+            'THROTTLE_LIMIT_STATUS' => 2,
+            'THROTTLE_TIME_STATUS' => 300,
+            //Fetching Sellers Participation
+            'THROTTLE_LIMIT_SELLERS' => 15,
+            'THROTTLE_TIME_SELLERS' => 60,
+            //Anything in Inbound/Inventory/Outbound
+            'THROTTLE_LIMIT_INVENTORY' => 30,
+            'THROTTLE_TIME_INVENTORY' => 2,
+            //Products
+            'THROTTLE_LIMIT_PRODUCT' => 20,
+            'THROTTLE_TIME_PRODUCTLIST' => 5,
+            'THROTTLE_TIME_PRODUCTMATCH' => 1,
+            'THROTTLE_TIME_PRODUCTID' => 4,
+            'THROTTLE_TIME_PRODUCTPRICE' => 2,
+            //Requesting a Report
+            'THROTTLE_LIMIT_REPORTREQUEST' => 15,
+            'THROTTLE_TIME_REPORTREQUEST' => 60,
+            //Fetching a Report Request List
+            'THROTTLE_LIMIT_REPORTREQUESTLIST' => 10,
+            'THROTTLE_TIME_REPORTREQUESTLIST' => 45,
+            //Using a token with a report request
+            'THROTTLE_LIMIT_REPORTTOKEN' => 30,
+            'THROTTLE_TIME_REPORTTOKEN' => 2,
+            //Fetching a Report List
+            'THROTTLE_LIMIT_REPORTLIST' => 10,
+            'THROTTLE_TIME_REPORTLIST' => 60,
+            //Fetching a Report
+            'THROTTLE_LIMIT_REPORT' => 15,
+            'THROTTLE_TIME_REPORT' => 60,
+            //Fetching a Report Request List
+            'THROTTLE_LIMIT_REPORTSCHEDULE' => 10,
+            'THROTTLE_TIME_REPORTSCHEDULE' => 45,
+            //Submitting a Feed
+            'THROTTLE_LIMIT_FEEDSUBMIT' => 15,
+            'THROTTLE_TIME_FEEDSUBMIT' => 120,
+            //Fetching a Feed List
+            'THROTTLE_LIMIT_FEEDLIST' => 10,
+            'THROTTLE_TIME_FEEDLIST' => 45,
+            //Getting a Feed
+            'THROTTLE_LIMIT_FEEDRESULT' => 15,
+            'THROTTLE_TIME_FEEDRESULT' => 60,
+            //Merchant Fulfillments
+            'THROTTLE_LIMIT_MERCHANT' => 10,
+            'THROTTLE_TIME_MERCHANT' => 1,
+            //Subscriptions
+            'THROTTLE_LIMIT_SUBSCRIBE' => 25,
+            'THROTTLE_TIME_SUBSCRIBE' => 1,
+            //Recommendations
+            'THROTTLE_LIMIT_RECOMMEND' => 8,
+            'THROTTLE_TIME_RECOMMEND' => 2,
+            //Recommendations
+            'THROTTLE_LIMIT_FINANCE' => 30,
+            'THROTTLE_TIME_FINANCE' => 2,
+        ];
+    }
+    protected function getDefaultConfig()
+    {
+        return [
+            'store' => [
+                'testStore' => [
+                    // Merchant ID for this store
+                    'merchantId' => 'T_M_GOOD_83835495',
+                    // Marketplace ID for this store
+                    'marketplaceId' => 'ATVPDKIKX0DER',
+                    // Access Key ID
+                    'keyId' => 'key',
+                    // Secret Accress Key for this store
+                    'secretKey' => 'secret',
+                    // token needed for web apps and third-party developers
+                    'MWSAuthToken' => 'secret',
+
+                ],
+            ],
+
+            //Fake store
+            'bad' => [
+                'no' => 'no',
+            ],
+
+            //Service URL Base
+            //Current setting is United States
+            'AMAZON_SERVICE_URL' => 'https://mws.amazonservices.com/',
+
+            //Location of log file to use
+            'logpath' => __DIR__ . '/log.txt',
+
+            //Name of custom log function to use
+            'logfunction' => '',
+
+            //Turn off normal logging
+            'muteLog' => false,
+
+            'env'=>$this->getDefaultEnv(),
+        ];
+
+    }
+
+    protected function _initConfig()
+    {
+        extract($this->config,EXTR_OVERWRITE);
+        $this->setLogPath($logpath);
+        if (isset($AMAZON_SERVICE_URL)) {
+            $this->urlbase = rtrim($AMAZON_SERVICE_URL, '/') . '/';
+        }
+        $this->_initEnv();
+    }
+
+    protected function _initEnv()
+    {
+        if(isset($this->config['env'])){
+            if(is_array($this->config['env'])){
+                $environment = $this->config['env'];
+            }elseif (is_string($this->config['env']) && file_exists($this->config['env']) && is_readable($this->config['env'])){
+                include($this->config['env']);
+                $environment = compact(
+                    'AMAZON_APPLICATION',
+                    'AMAZON_APPVERSION',
+                    //Version numbers for cores
+                    'AMAZON_VERSION_FEEDS'      ,
+                    'AMAZON_VERSION_FINANCE'    ,
+                    'AMAZON_VERSION_INBOUND'    ,
+                    'AMAZON_VERSION_INVENTORY'  ,
+                    'AMAZON_VERSION_MERCHANT'   ,
+                    'AMAZON_VERSION_ORDERS'     ,
+                    'AMAZON_VERSION_OUTBOUND'   ,
+                    'AMAZON_VERSION_PRODUCTS'   ,
+                    'AMAZON_VERSION_RECOMMEND'  ,
+                    'AMAZON_VERSION_REPORTS'    ,
+                    'AMAZON_VERSION_SELLERS'    ,
+                    'AMAZON_VERSION_SUBSCRIBE'  ,
+
+                    //Amazon Throttle Values in seconds
+                    //Fetching Orders
+                    'THROTTLE_LIMIT_ORDER',
+                    'THROTTLE_TIME_ORDER',
+                    //Fetching Order Lists
+                    'THROTTLE_LIMIT_ORDERLIST',
+                    'THROTTLE_TIME_ORDERLIST',
+                    //Fetching Items
+                    'THROTTLE_LIMIT_ITEM',
+                    'THROTTLE_TIME_ITEM',
+                    //Fetching Service Status
+                    'THROTTLE_LIMIT_STATUS',
+                    'THROTTLE_TIME_STATUS',
+                    //Fetching Sellers Participation
+                    'THROTTLE_LIMIT_SELLERS',
+                    'THROTTLE_TIME_SELLERS',
+                    //Anything in Inbound/Inventory/Outbound
+                    'THROTTLE_LIMIT_INVENTORY',
+                    'THROTTLE_TIME_INVENTORY',
+                    //Products
+                    'THROTTLE_LIMIT_PRODUCT',
+                    'THROTTLE_TIME_PRODUCTLIST',
+                    'THROTTLE_TIME_PRODUCTMATCH',
+                    'THROTTLE_TIME_PRODUCTID',
+                    'THROTTLE_TIME_PRODUCTPRICE',
+                    //Requesting a Report
+                    'THROTTLE_LIMIT_REPORTREQUEST',
+                    'THROTTLE_TIME_REPORTREQUEST',
+                    //Fetching a Report Request List
+                    'THROTTLE_LIMIT_REPORTREQUESTLIST',
+                    'THROTTLE_TIME_REPORTREQUESTLIST',
+                    //Using a token with a report request
+                    'THROTTLE_LIMIT_REPORTTOKEN',
+                    'THROTTLE_TIME_REPORTTOKEN',
+                    //Fetching a Report List
+                    'THROTTLE_LIMIT_REPORTLIST',
+                    'THROTTLE_TIME_REPORTLIST',
+                    //Fetching a Report
+                    'THROTTLE_LIMIT_REPORT',
+                    'THROTTLE_TIME_REPORT',
+                    //Fetching a Report Request List
+                    'THROTTLE_LIMIT_REPORTSCHEDULE',
+                    'THROTTLE_TIME_REPORTSCHEDULE',
+                    //Submitting a Feed
+                    'THROTTLE_LIMIT_FEEDSUBMIT',
+                    'THROTTLE_TIME_FEEDSUBMIT',
+                    //Fetching a Feed List
+                    'THROTTLE_LIMIT_FEEDLIST',
+                    'THROTTLE_TIME_FEEDLIST',
+                    //Getting a Feed
+                    'THROTTLE_LIMIT_FEEDRESULT',
+                    'THROTTLE_TIME_FEEDRESULT',
+                    //Merchant Fulfillments
+                    'THROTTLE_LIMIT_MERCHANT',
+                    'THROTTLE_TIME_MERCHANT',
+                    //Subscriptions
+                    'THROTTLE_LIMIT_SUBSCRIBE',
+                    'THROTTLE_TIME_SUBSCRIBE',
+                    //Recommendations
+                    'THROTTLE_LIMIT_RECOMMEND',
+                    'THROTTLE_TIME_RECOMMEND',
+                    //Recommendations
+                    'THROTTLE_LIMIT_FINANCE',
+                    'THROTTLE_TIME_FINANCE');
+            }
+        }else{
+            $environment = $this->getDefaultEnv();
+        }
+        $this->env = array_merge($this->env,$environment);
+    }
+
     // -- End Functions from Amazon --
     
 }
-
-?>

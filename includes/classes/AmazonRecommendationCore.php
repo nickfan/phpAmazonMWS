@@ -41,12 +41,8 @@ abstract class AmazonRecommendationCore extends AmazonCore{
      */
     public function __construct($s = null, $mock = false, $m = null, $config = null){
         parent::__construct($s, $mock, $m, $config);
-        include($this->env);
-        if (file_exists($this->config)){
-            include($this->config);
-        } else {
-            throw new Exception('Config file does not exist!');
-        }
+        extract($this->env,EXTR_OVERWRITE);
+        extract($this->config,EXTR_OVERWRITE);
 
         if (isset($AMAZON_VERSION_RECOMMEND)){
             $this->urlbranch = 'Recommendations/' . $AMAZON_VERSION_RECOMMEND;

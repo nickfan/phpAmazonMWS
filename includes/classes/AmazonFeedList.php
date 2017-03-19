@@ -49,7 +49,7 @@ class AmazonFeedList extends AmazonFeedsCore implements Iterator{
      */
     public function __construct($s = null, $mock = false, $m = null, $config = null){
         parent::__construct($s, $mock, $m, $config);
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         
         if(isset($THROTTLE_LIMIT_FEEDLIST)) {
             $this->throttleLimit = $THROTTLE_LIMIT_FEEDLIST;
@@ -308,7 +308,7 @@ class AmazonFeedList extends AmazonFeedsCore implements Iterator{
      * parameters will be removed.
      */
     protected function prepareToken(){
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         if ($this->tokenFlag && $this->tokenUseFlag){
             $this->options['Action'] = 'GetFeedSubmissionListByNextToken';
             if(isset($THROTTLE_LIMIT_REPORTTOKEN)) {
@@ -470,7 +470,7 @@ class AmazonFeedList extends AmazonFeedsCore implements Iterator{
      * feed statuses, max count, and token.
      */
     protected function prepareCancel(){
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         $this->options['Action'] = 'CancelFeedSubmissions';
         if(isset($THROTTLE_LIMIT_FEEDLIST)) {
             $this->throttleLimit = $THROTTLE_LIMIT_FEEDLIST;

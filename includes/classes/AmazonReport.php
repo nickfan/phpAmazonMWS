@@ -44,7 +44,7 @@ class AmazonReport extends AmazonReportsCore{
      */
     public function __construct($s = null, $id = null, $mock = false, $m = null, $config = null) {
         parent::__construct($s, $mock, $m, $config);
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         
         if($id){
             $this->setReportId($id);

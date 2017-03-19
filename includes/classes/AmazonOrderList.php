@@ -46,7 +46,7 @@ class AmazonOrderList extends AmazonOrderCore implements Iterator{
      */
     public function __construct($s = null, $mock = false, $m = null, $config = null){
         parent::__construct($s, $mock, $m, $config);
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         $this->resetMarketplaceFilter();
         
         if(isset($THROTTLE_LIMIT_ORDERLIST)) {
@@ -219,11 +219,7 @@ class AmazonOrderList extends AmazonOrderCore implements Iterator{
         }
 
         //reset to store's default marketplace
-        if (file_exists($this->config)){
-            include($this->config);
-        } else {
-            throw new Exception('Config file does not exist!');
-        }
+        extract($this->config,EXTR_OVERWRITE);
         if(isset($store[$this->storeName]) && array_key_exists('marketplaceId', $store[$this->storeName])){
             $this->options['MarketplaceId.Id.1'] = $store[$this->storeName]['marketplaceId'];
         } else {

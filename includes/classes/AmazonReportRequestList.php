@@ -48,7 +48,7 @@ class AmazonReportRequestList extends AmazonReportsCore implements Iterator{
      */
     public function __construct($s = null, $mock = false, $m = null, $config = null) {
         parent::__construct($s, $mock, $m, $config);
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         
         if(isset($THROTTLE_LIMIT_REPORTREQUESTLIST)) {
             $this->throttleLimit = $THROTTLE_LIMIT_REPORTREQUESTLIST;
@@ -302,7 +302,7 @@ class AmazonReportRequestList extends AmazonReportsCore implements Iterator{
      * parameters will be removed.
      */
     protected function prepareToken(){
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         if ($this->tokenFlag && $this->tokenUseFlag){
             $this->options['Action'] = 'GetReportRequestListByNextToken';
             if(isset($THROTTLE_LIMIT_REPORTTOKEN)) {
@@ -342,7 +342,7 @@ class AmazonReportRequestList extends AmazonReportsCore implements Iterator{
      * max count and token.
      */
     protected function prepareCancel(){
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         $this->options['Action'] = 'CancelReportRequests';
         if(isset($THROTTLE_LIMIT_REPORTREQUESTLIST)) {
             $this->throttleLimit = $THROTTLE_LIMIT_REPORTREQUESTLIST;
@@ -466,7 +466,7 @@ class AmazonReportRequestList extends AmazonReportsCore implements Iterator{
      * request IDs, max count, and token.
      */
     protected function prepareCount(){
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         $this->options['Action'] = 'GetReportRequestCount';
         if(isset($THROTTLE_LIMIT_REPORTREQUESTLIST)) {
             $this->throttleLimit = $THROTTLE_LIMIT_REPORTREQUESTLIST;

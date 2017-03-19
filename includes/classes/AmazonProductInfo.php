@@ -210,7 +210,7 @@ class AmazonProductInfo extends AmazonProductsCore{
      * ItemCondition and ExcludeMe.
      */
     protected function prepareCompetitive(){
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         if(isset($THROTTLE_TIME_PRODUCTPRICE)) {
             $this->throttleTime = $THROTTLE_TIME_PRODUCTPRICE;
         }
@@ -269,7 +269,7 @@ class AmazonProductInfo extends AmazonProductsCore{
      * This changes key options for using <i>fetchLowestOffer</i>.
      */
     protected function prepareLowest(){
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         if(isset($THROTTLE_TIME_PRODUCTPRICE)) {
             $this->throttleTime = $THROTTLE_TIME_PRODUCTPRICE;
         }
@@ -324,7 +324,7 @@ class AmazonProductInfo extends AmazonProductsCore{
      * This changes key options for using <i>fetchLowestPricedOffers</i>.
      */
     protected function prepareLowestPriced(){
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         if(isset($THROTTLE_TIME_PRODUCTPRICE)) {
             $this->throttleTime = $THROTTLE_TIME_PRODUCTPRICE;
         }
@@ -385,7 +385,7 @@ class AmazonProductInfo extends AmazonProductsCore{
      * the ExcludeMe parameter will be removed.
      */
     protected function prepareMyPrice(){
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         if(isset($THROTTLE_TIME_PRODUCTPRICE)) {
             $this->throttleTime = $THROTTLE_TIME_PRODUCTPRICE;
         }
@@ -445,7 +445,7 @@ class AmazonProductInfo extends AmazonProductsCore{
      * ItemCondition and ExcludeMe.
      */
     protected function prepareCategories(){
-        include($this->env);
+        extract($this->env,EXTR_OVERWRITE);
         if(isset($THROTTLE_TIME_PRODUCTLIST)) {
             $this->throttleTime = $THROTTLE_TIME_PRODUCTLIST;
         }
