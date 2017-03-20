@@ -127,6 +127,7 @@ abstract class AmazonCore{
      */
     protected function __construct($s = null, $mock = false, $m = null, $config = null){
 
+        $this->config = $this->getDefaultConfig();
         $this->setConfig($config);
         $this->setStore($s);
         $this->setMock($mock,$m);
@@ -621,6 +622,16 @@ abstract class AmazonCore{
      */
     protected function log($msg, $level = 'Info'){
         if ($msg != false) {
+            switch ($level){
+                case('Throttle'):
+                case('Warning'):
+                case('Urgent'):
+                        throw new Exception($msg);
+                    break;
+                case('Info'):
+                default:
+                    break;
+            }
             $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 
             extract($this->config,EXTR_OVERWRITE);
